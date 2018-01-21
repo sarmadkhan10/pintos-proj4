@@ -169,7 +169,7 @@ inode_create (block_sector_t sector, off_t length)
       //size_t sectors = bytes_to_sectors (length);
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
-      if (inode_allocate (&disk_inode))
+      if (inode_allocate (disk_inode))
         {
           buffer_cache_write (sector, disk_inode, 0, BLOCK_SECTOR_SIZE, false);
 
@@ -414,15 +414,12 @@ inode_reserve_indirect   (block_sector_t* p_entry, size_t num_sectors, int level
 
   if (level == 0)
     {
-      if(*p_entry==0)
-        {
-          // base case : allocate a single sector and put it into the block
-          free_map_allocate (1, p_entry);
-          buffer_cache_write (*p_entry, zeros, 0, BLOCK_SECTOR_SIZE, false);
-
-        }
-      return;
+      if (*p_entry == 0) {
+      free_map_allocate (1, p_entry);
+      buffer_cache_write (*p_entry, zeros, 0, BLOCK_SECTOR_SIZE, false);
     }
+    return;
+  }
 
   struct inode_indirect_block_sector indirect_block;
   if (*p_entry == 0)
@@ -431,7 +428,7 @@ inode_reserve_indirect   (block_sector_t* p_entry, size_t num_sectors, int level
       free_map_allocate (1, p_entry);
       buffer_cache_write (*p_entry, zeros, 0, BLOCK_SECTOR_SIZE, true);
     }
-  buffer_cache_write (*p_entry, &indirect_block, 0, BLOCK_SECTOR_SIZE, false);
+  buffer_cache_read (*p_entry, &indirect_block, 0, BLOCK_SECTOR_SIZE);
 
   size_t unit = (level == 1 ? 1 : PER_SECTOR_INDIRECT_BLOCKS);
   size_t i, l = DIV_ROUND_UP(num_sectors, unit);
