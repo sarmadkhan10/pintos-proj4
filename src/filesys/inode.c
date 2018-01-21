@@ -122,7 +122,7 @@ index_to_sector (const struct inode_disk *idisk, off_t index)
    Returns -1 if INODE does not contain data for a byte at offset
    POS. */
 static block_sector_t
-byte_to_sector (const struct inode *inode, off_t pos)
+byte_to_sector (const struct inode *inode, off_t pos) 
 {
   ASSERT (inode != NULL);
   if (0 <= pos && pos < inode->data.length)
