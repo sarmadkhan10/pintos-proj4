@@ -19,8 +19,8 @@ struct buffer_cache_entry
   };
 
 void buffer_cache_init (void);
-void buffer_cache_write (void *, block_sector_t );
-bool buffer_cache_read (void *, block_sector_t );
+void buffer_cache_write (block_sector_t , const void *, int , int , bool );
+void buffer_cache_read (block_sector_t , void *, int , int );
 size_t buffer_cache_evict (void);
 void spawn_thread_read_ahead (block_sector_t );
 void buffer_cache_write_back (void);
