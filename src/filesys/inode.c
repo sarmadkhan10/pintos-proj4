@@ -414,10 +414,12 @@ inode_reserve_indirect   (block_sector_t* p_entry, size_t num_sectors, int level
 
   if (level == 0)
     {
-      if (*p_entry == 0) {
-      free_map_allocate (1, p_entry);
-      buffer_cache_write (*p_entry, zeros, 0, BLOCK_SECTOR_SIZE, false);
-    }
+      if (*p_entry == 0)
+        {
+          // base case : allocate a single sector and put it into the block
+          free_map_allocate (1, p_entry);
+          buffer_cache_write (*p_entry, zeros, 0, BLOCK_SECTOR_SIZE, false);
+        }
     return;
   }
 
