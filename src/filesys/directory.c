@@ -35,12 +35,8 @@ dir_create (block_sector_t sector, size_t entry_cnt, char *path)
   block_sector_t parent = inode_get_inumber (dir_get_inode (dir));
 
   bool success = (dir != NULL
-                  && free_map_allocate (1, &sector)
                   && inode_create (sector, entry_cnt, true, parent)
                   && dir_add (dir, dir_to_create, sector));
-  if (!success && sector != 0)
-    free_map_release (sector, 1);
-  dir_close (dir);
 
   free (dir_to_create);
   return success;
@@ -310,3 +306,19 @@ struct dir* dir_get_leaf (const char* path)
     }
   return dir;
 }
+
+/* Change directory by changing thread->cwd*/
+bool
+dir_chdir (char *name)
+{
+  struct dir *dir = dir_open_path (name);
+
+  if(dir == NULL) {
+    return false;
+  }
+
+  dir_close (thread_current()->cwd);
+  thread_current()->cwd = dir;
+  return true;
+}
+
