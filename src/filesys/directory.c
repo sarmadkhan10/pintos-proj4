@@ -6,6 +6,7 @@
 #include "filesys/inode.h"
 #include "threads/malloc.h"
 #include "threads/thread.h"
+#include "filesys/free-map.h"
 
 /* A directory. */
 struct dir 
@@ -22,15 +23,27 @@ struct dir_entry
     block_sector_t inode_sector;        /* Sector number of header. */
     char name[NAME_MAX + 1];            /* Null terminated file name. */
     bool in_use;                        /* In use or free? */
-    //bool is_dir;                        /* ture: dir, false: simple file */
   };
 
 /* Creates a directory with space for ENTRY_CNT entries in the
    given SECTOR.  Returns true if successful, false on failure. */
 bool
-dir_create (block_sector_t sector, size_t entry_cnt)
+dir_create (block_sector_t sector, size_t entry_cnt, char *path)
 {
-  return inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
+  char *dir_to_create = get_filename (path);
+  struct dir *dir = dir_get_leaf (path);
+  block_sector_t parent = inode_get_inumber (dir_get_inode (dir));
+
+  bool success = (dir != NULL
+                  && free_map_allocate (1, &sector)
+                  && inode_create (sector, entry_cnt, true, parent)
+                  && dir_add (dir, dir_to_create, sector));
+  if (!success && sector != 0)
+    free_map_release (sector, 1);
+  dir_close (dir);
+
+  free (dir_to_create);
+  return success;
 }
 
 /* Opens and returns the directory for the given INODE, of which
