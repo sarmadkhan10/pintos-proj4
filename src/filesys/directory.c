@@ -30,7 +30,19 @@ struct dir_entry
 bool
 dir_create (block_sector_t sector, size_t entry_cnt, char *path)
 {
+  /* create root */
+  if ((path[strlen (path) - 1] == '/') && (strlen (path) == 1))
+    {
+      inode_create (sector, entry_cnt, true, ROOT_DIR_SECTOR);
+      return true;
+    }
+
+  /* remove trailing '/' */
+  if (path[strlen (path) - 1] == '/')
+    path[strlen (path )- 1] = '\0';
+
   char *dir_to_create = get_filename (path);
+
   struct dir *dir = dir_get_leaf (path);
   block_sector_t parent = inode_get_inumber (dir_get_inode (dir));
 
@@ -263,11 +275,11 @@ struct dir* dir_get_leaf (const char* path)
   char path_copy[strlen (path) + 1];
   memcpy(path_copy, path, strlen(path) + 1);
 
-  if (strlen (path) > 0 && path_copy[strlen (path) - 1] == '/')
-      return NULL;
+  //if (strlen (path) > 0 && path_copy[strlen (path) - 1] == '/')
+      //return NULL;
 
   struct dir* dir;
-  if (path_copy[0] == '/') //|| !thread_current()->cwd)
+  if (path_copy[0] == '/' || !thread_current()->cwd)
       dir = dir_open_root ();
   else
       dir = dir_reopen (thread_current ()->cwd);

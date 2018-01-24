@@ -79,11 +79,9 @@ filesys_create (const char *path, off_t initial_size)
 struct file *
 filesys_open (const char *path)
 {
-  printf ("here1\n");
   char *filename = get_filename (path);
   struct dir *dir = dir_get_leaf (path);
   struct inode *inode = NULL;
-  printf ("here2\n");
 
   if (dir != NULL)
     dir_lookup (dir, filename, &inode);
@@ -115,8 +113,10 @@ do_format (void)
 {
   printf ("Formatting file system...");
   free_map_create ();
+  printf ("here1\n");
   if (!dir_create (ROOT_DIR_SECTOR, 16, "/"))
     PANIC ("root directory creation failed");
+  printf ("here2\n");
   free_map_close ();
   printf ("done.\n");
 }
