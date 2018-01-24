@@ -212,6 +212,12 @@ thread_create (const char *name, int priority,
   list_init (&t->file_list);
   t->fd = 2;
   t->exec=NULL;
+
+#ifdef FILESYS
+  /* initialize the process's cwd to root */
+  thread_current ()->cwd = dir_open_root ();
+#endif /* FILESYS */
+
 #endif /* USERPROG */
 
   /* Add to run queue. */

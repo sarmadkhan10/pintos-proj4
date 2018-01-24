@@ -5,12 +5,15 @@
 #include "filesys/filesys.h"
 #include "filesys/inode.h"
 #include "threads/malloc.h"
+#include "threads/thread.h"
 
 /* A directory. */
 struct dir 
   {
     struct inode *inode;                /* Backing store. */
     off_t pos;                          /* Current position. */
+    bool safe_to_del;                   /* prevent deletion if open or cwd of a process */
+    struct dir *parent_dir;             /* parent directory */
   };
 
 /* A single directory entry. */
@@ -19,6 +22,7 @@ struct dir_entry
     block_sector_t inode_sector;        /* Sector number of header. */
     char name[NAME_MAX + 1];            /* Null terminated file name. */
     bool in_use;                        /* In use or free? */
+    //bool is_dir;                        /* ture: dir, false: simple file */
   };
 
 /* Creates a directory with space for ENTRY_CNT entries in the
@@ -26,7 +30,7 @@ struct dir_entry
 bool
 dir_create (block_sector_t sector, size_t entry_cnt)
 {
-  return inode_create (sector, entry_cnt * sizeof (struct dir_entry));
+  return inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
 }
 
 /* Opens and returns the directory for the given INODE, of which
@@ -39,6 +43,7 @@ dir_open (struct inode *inode)
     {
       dir->inode = inode;
       dir->pos = 0;
+      dir->safe_to_del = false;
       return dir;
     }
   else
@@ -71,6 +76,11 @@ dir_close (struct dir *dir)
 {
   if (dir != NULL)
     {
+      /* open_cnt gets decremented in inode_close */
+      if (dir->inode != NULL)
+        if (inode_open_count(dir->inode) == 1)
+          dir->safe_to_del = true;
+
       inode_close (dir->inode);
       free (dir);
     }
@@ -233,4 +243,57 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
         } 
     }
   return false;
+}
+
+/* from path, the innermost (leaf) directory is returned
+ * e.g. for path /a/b/c/file, the dir struct for c will
+ * be returned (dir_open is called on it)
+ */
+struct dir* dir_get_leaf (const char* path)
+{
+  struct dir *dir;
+  char path_copy[strlen (path) + 1];
+
+  /* create copy of path */
+  memcpy(path_copy, path, strlen (path) + 1);
+
+  if (path_copy[0] == '/') //|| !thread_current()->cwd)
+    {
+      dir = dir_open_root();
+    }
+  else
+    {
+      dir = dir_reopen (thread_current()->cwd);
+    }
+
+  char *token, *save_ptr;
+  for (token = strtok_r (path_copy, "/", &save_ptr); token != NULL;
+       token = strtok_r (NULL, "/", &save_ptr))
+    {
+      if (strcmp(token, ".") == 0)
+        {
+          continue;
+        }
+      else if (strcmp(token, "..") == 0)
+        {
+          /* TODO: parent */
+        }
+      else
+        {
+          struct inode *inode;
+          if (dir_lookup (dir, token, &inode))
+            {
+              if (inode_is_dir (inode))
+                {
+                  dir_close (dir);
+                  dir = dir_open (inode);
+                }
+              else
+                {
+                  inode_close (inode);
+                }
+            }
+        }
+    }
+  return dir;
 }

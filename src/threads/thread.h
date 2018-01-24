@@ -109,6 +109,9 @@ struct thread
     struct file *exec;                  /* the process executable file */
 #endif
 
+#ifdef FILESYS
+    struct dir *cwd;                    /* current working directory */
+#endif /* FILESYS */
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };

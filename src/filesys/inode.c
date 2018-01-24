@@ -10,7 +10,7 @@
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
-#define COUNT_DIRECT_BLOCKS 124
+#define COUNT_DIRECT_BLOCKS 123
 #define PER_SECTOR_INDIRECT_BLOCKS 128
 
 /* On-disk inode.
@@ -18,14 +18,14 @@
 struct inode_disk
 {
   //block_sector_t start;               /* First data sector. */
-  /*Sectors for Data*/
+  /* Sectors for Data */
   block_sector_t direct_blocks[COUNT_DIRECT_BLOCKS];
   block_sector_t indirect_block;
   block_sector_t doubly_indirect_block;
 
-  off_t length; /* File size in bytes. */
-  unsigned magic; /* Magic number. */
-//uint32_t unused[125];               /* Not used. */
+  off_t length;                                       /* File size in bytes. */
+  unsigned magic;                                     /* Magic number. */
+  bool is_dir;                                        /* true: dir. false: simple file */
 };
 
 struct inode_indirect_block_sector
@@ -62,6 +62,7 @@ struct inode
   bool removed; /* True if deleted, false otherwise. */
   int deny_write_cnt; /* 0: writes ok, >0: deny writes. */
   struct inode_disk data; /* Inode content. */
+  //bool is_dir;
 };
 
 static block_sector_t
@@ -152,7 +153,7 @@ inode_init (void)
    Returns true if successful.
    Returns false if memory or disk allocation fails. */
 bool
-inode_create (block_sector_t sector, off_t length)
+inode_create (block_sector_t sector, off_t length, bool is_dir)
 {
   struct inode_disk *disk_inode = NULL;
   bool success = false;
@@ -169,6 +170,7 @@ inode_create (block_sector_t sector, off_t length)
       //size_t sectors = bytes_to_sectors (length);
       disk_inode->length = length;
       disk_inode->magic = INODE_MAGIC;
+      disk_inode->is_dir = is_dir;
       if (inode_allocate (disk_inode))
         {
           buffer_cache_write (sector, disk_inode, 0, BLOCK_SECTOR_SIZE, false);
@@ -563,3 +565,16 @@ inode_deallocate (struct inode *inode)
   return true;
 }
 
+/* returns true if inode is dir */
+bool
+inode_is_dir (struct inode *inode)
+{
+  return inode->data.is_dir;
+}
+
+/* returns open_cnt of inode */
+int
+inode_open_count (struct inode *inode)
+{
+  return inode->open_cnt;
+}
