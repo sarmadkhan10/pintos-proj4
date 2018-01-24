@@ -94,6 +94,7 @@ syscall_init (void)
   syscall_table[SYS_TELL] = _syscall_tell;
   syscall_table[SYS_CLOSE] = _syscall_close;
   syscall_table[SYS_MKDIR] = _syscall_mkdir;
+  syscall_table[SYS_CHDIR] = _syscall_mkdir;
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -339,6 +340,24 @@ _syscall_mkdir(struct intr_frame *f)
 }
 
 
+int
+_syscall_chdir(struct intr_frame *f)
+{
+  const char* name;
+
+  if ((is_uaddr_valid ((char *)f->esp + 4) == false) ||
+        (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
+      syscall_exit (-1);
+
+    name = *((char **) ((char *)f->esp + 4));
+
+    f->eax = syscall_chdir (name);
+
+
+  return 0;
+}
+
+
 void
 syscall_halt(void)
 {
@@ -513,15 +532,30 @@ syscall_close(int fd)
   lock_release(&filesys_lock);
 }
 
-bool syscall_mkdir(char* path)
+bool
+syscall_mkdir(char* path)
 {
   bool success = false;
   lock_acquire(&filesys_lock);
   block_sector_t sector;
-  success = dir_create(sector,1,path);
+
+  if(free_map_allocate (1, &sector))
+    success = dir_create(sector,1,path);
+
   lock_release(&filesys_lock);
   return success;
 }
+
+bool
+syscall_chdir(char* name)
+{
+  bool success = false;
+  lock_acquire(&filesys_lock);
+  success = dir_chdir(name);
+  lock_release(&filesys_lock);
+  return success;
+}
+
 
 
 

@@ -35,12 +35,8 @@ dir_create (block_sector_t sector, size_t entry_cnt, char *path)
   block_sector_t parent = inode_get_inumber (dir_get_inode (dir));
 
   bool success = (dir != NULL
-                  && free_map_allocate (1, &sector)
                   && inode_create (sector, entry_cnt, true, parent)
                   && dir_add (dir, dir_to_create, sector));
-  if (!success && sector != 0)
-    free_map_release (sector, 1);
-  dir_close (dir);
 
   free (dir_to_create);
   return success;
@@ -258,6 +254,9 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
   return false;
 }
 
+
+
+
 /* from path, the innermost (leaf) directory is returned
  * e.g. for path /a/b/c/file, the dir struct for c will
  * be returned (dir_open is called on it)
@@ -310,3 +309,21 @@ struct dir* dir_get_leaf (const char* path)
     }
   return dir;
 }
+
+
+
+/* Change directory by changing thread->cwd*/
+bool
+dir_chdir (char *name)
+{
+  struct dir *dir = dir_get_leaf (name);
+
+  if(dir == NULL) {
+    return false;
+  }
+
+  dir_close (thread_current()->cwd);
+  thread_current()->cwd = dir;
+  return true;
+}
+

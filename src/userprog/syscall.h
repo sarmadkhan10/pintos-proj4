@@ -28,6 +28,7 @@ int _syscall_seek (struct intr_frame *f);
 int _syscall_tell (struct intr_frame *f);
 int _syscall_close (struct intr_frame *f);
 int _syscall_mkdir (struct intr_frame *f);
+int _syscall_chdir (struct intr_frame *f);
 
 //user implemented methods
 void syscall_halt(void);
@@ -44,5 +45,6 @@ void syscall_seek(int fd,unsigned position);
 unsigned syscall_tell(int fd);
 void syscall_close(int fd);
 bool syscall_mkdir(char* path);
+bool syscall_chdir(char* name);
 
 #endif /* userprog/syscall.h */
