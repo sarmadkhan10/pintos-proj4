@@ -254,6 +254,9 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
   return false;
 }
 
+
+
+
 /* from path, the innermost (leaf) directory is returned
  * e.g. for path /a/b/c/file, the dir struct for c will
  * be returned (dir_open is called on it)
@@ -307,11 +310,13 @@ struct dir* dir_get_leaf (const char* path)
   return dir;
 }
 
+
+
 /* Change directory by changing thread->cwd*/
 bool
 dir_chdir (char *name)
 {
-  struct dir *dir = dir_open_path (name);
+  struct dir *dir = dir_get_leaf (name);
 
   if(dir == NULL) {
     return false;
