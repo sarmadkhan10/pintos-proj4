@@ -10,6 +10,7 @@
 #include "filesys/filesys.h"
 #include "devices/shutdown.h"
 #include "devices/input.h"
+#include "devices/block.h"
 
 
 /* lock for filesystem. */
@@ -92,6 +93,7 @@ syscall_init (void)
   syscall_table[SYS_SEEK] = _syscall_seek;
   syscall_table[SYS_TELL] = _syscall_tell;
   syscall_table[SYS_CLOSE] = _syscall_close;
+  syscall_table[SYS_MKDIR] = _syscall_mkdir;
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -318,6 +320,25 @@ _syscall_close(struct intr_frame *f)
   return 0;
 }
 
+
+int
+_syscall_mkdir(struct intr_frame *f)
+{
+  const char* filename;
+
+  if ((is_uaddr_valid ((char *)f->esp + 4) == false) ||
+        (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
+      syscall_exit (-1);
+
+    filename = *((char **) ((char *)f->esp + 4));
+
+    f->eax = syscall_mkdir (filename);
+
+
+  return 0;
+}
+
+
 void
 syscall_halt(void)
 {
@@ -491,6 +512,18 @@ syscall_close(int fd)
   process_close_file(fd);
   lock_release(&filesys_lock);
 }
+
+bool syscall_mkdir(char* path)
+{
+  bool success = false;
+  lock_acquire(&filesys_lock);
+  block_sector_t sector;
+  success = dir_create(sector,1,path);
+  lock_release(&filesys_lock);
+  return success;
+}
+
+
 
 static void
 syscall_handler (struct intr_frame *f)

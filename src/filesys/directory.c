@@ -28,9 +28,22 @@ struct dir_entry
 /* Creates a directory with space for ENTRY_CNT entries in the
    given SECTOR.  Returns true if successful, false on failure. */
 bool
-dir_create (block_sector_t sector, size_t entry_cnt)
+dir_create (block_sector_t sector, off_t entry_cnt,char* path)
 {
-  return inode_create (sector, entry_cnt * sizeof (struct dir_entry), true);
+
+    char *filename = get_filename (path);
+    struct dir *dir = dir_get_leaf (path);
+
+    bool success = (dir != NULL
+                    && free_map_allocate (1, &sector)
+                    && inode_create (sector, entry_cnt, true,dir->inode->sector)
+                    && dir_add (dir, filename, sector));
+    if (!success && sector != 0)
+      free_map_release (sector, 1);
+    dir_close (dir);
+
+    free (filename);
+  return success;
 }
 
 /* Opens and returns the directory for the given INODE, of which
@@ -263,7 +276,12 @@ struct dir* dir_get_leaf (const char* path)
     }
   else
     {
-      dir = dir_reopen (thread_current()->cwd);
+      struct thread *t = thread_current();
+          if (t->cwd == NULL) // may happen for non-process threads (e.g. main)
+            dir = dir_open_root();
+          else {
+            dir = dir_reopen( t->cwd );
+          }
     }
 
   char *token, *save_ptr;
