@@ -215,7 +215,7 @@ thread_create (const char *name, int priority,
 
 #ifdef FILESYS
   /* initialize the process's cwd to root */
-  thread_current ()->cwd = dir_open_root ();
+  thread_current ()->cwd = NULL;
 #endif /* FILESYS */
 
 #endif /* USERPROG */

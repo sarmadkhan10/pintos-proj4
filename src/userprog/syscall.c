@@ -94,8 +94,8 @@ syscall_init (void)
   syscall_table[SYS_SEEK] = _syscall_seek;
   syscall_table[SYS_TELL] = _syscall_tell;
   syscall_table[SYS_CLOSE] = _syscall_close;
+  syscall_table[SYS_CHDIR] = _syscall_chdir;
   syscall_table[SYS_MKDIR] = _syscall_mkdir;
-  syscall_table[SYS_CHDIR] = _syscall_mkdir;
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 

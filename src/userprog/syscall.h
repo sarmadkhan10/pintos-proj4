@@ -7,9 +7,7 @@
 #include "threads/synch.h"
 #include "user/syscall.h"
 
-#define SYSCALL_TOTAL 19
-
-
+#define SYSCALL_TOTAL 20
 
 void syscall_init (void);
 

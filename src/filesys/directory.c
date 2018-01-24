@@ -254,63 +254,47 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
   return false;
 }
 
-
-
-
 /* from path, the innermost (leaf) directory is returned
  * e.g. for path /a/b/c/file, the dir struct for c will
  * be returned (dir_open is called on it)
  */
 struct dir* dir_get_leaf (const char* path)
 {
-  struct dir *dir;
   char path_copy[strlen (path) + 1];
+  memcpy(path_copy, path, strlen(path) + 1);
 
-  /* create copy of path */
-  memcpy(path_copy, path, strlen (path) + 1);
+  if (strlen (path) > 0 && path_copy[strlen (path) - 1] == '/')
+      return NULL;
 
+  struct dir* dir;
   if (path_copy[0] == '/') //|| !thread_current()->cwd)
-    {
-      dir = dir_open_root();
-    }
+      dir = dir_open_root ();
   else
-    {
-      dir = dir_reopen (thread_current()->cwd);
-    }
+      dir = dir_reopen (thread_current ()->cwd);
 
-  char *token, *save_ptr;
-  for (token = strtok_r (path_copy, "/", &save_ptr); token != NULL;
-       token = strtok_r (NULL, "/", &save_ptr))
+  char *save_ptr, *next_token, *token = strtok_r (path_copy, "/", &save_ptr);
+  if (token)
+      next_token = strtok_r (NULL, "/", &save_ptr);
+  else
+      next_token = NULL;
+  while (next_token != NULL)
     {
-      if (strcmp(token, ".") == 0)
+      struct inode *inode;
+      if (!dir_lookup (dir, token, &inode))
+          return NULL;
+      if (inode_is_dir(inode))
         {
-          continue;
-        }
-      else if (strcmp(token, "..") == 0)
-        {
-          /* TODO: parent */
+          dir_close (dir);
+          dir = dir_open (inode);
         }
       else
-        {
-          struct inode *inode;
-          if (dir_lookup (dir, token, &inode))
-            {
-              if (inode_is_dir (inode))
-                {
-                  dir_close (dir);
-                  dir = dir_open (inode);
-                }
-              else
-                {
-                  inode_close (inode);
-                }
-            }
-        }
+        inode_close (inode);
+
+      token = next_token;
+      next_token = strtok_r (NULL, "/", &save_ptr);
     }
   return dir;
 }
-
-
 
 /* Change directory by changing thread->cwd*/
 bool
@@ -326,4 +310,3 @@ dir_chdir (char *name)
   thread_current()->cwd = dir;
   return true;
 }
-
