@@ -125,7 +125,7 @@ char *
 get_filename (const char *path)
 {
   char s[strlen (path) + 1];
-  char *token, *save_ptr, *prev;
+  char *token, *save_ptr, *prev = "";
 
   memcpy(s, path, strlen (path) + 1);
 

@@ -11,7 +11,8 @@
 #include "devices/shutdown.h"
 #include "devices/input.h"
 #include "devices/block.h"
-
+#include "filesys/directory.h"
+#include "filesys/free-map.h"
 
 /* lock for filesystem. */
 struct lock filesys_lock;
@@ -46,7 +47,7 @@ is_uaddr_valid (void *uaddr)
 
 /* Checks the validity of the user str. Returns true if the string
    is valid i.e. in user virtual memory. */
-bool
+static bool
 is_string_valid (const void *str)
 {
   bool valid = true;
@@ -325,7 +326,7 @@ _syscall_close(struct intr_frame *f)
 int
 _syscall_mkdir(struct intr_frame *f)
 {
-  const char* filename;
+  char *filename;
 
   if ((is_uaddr_valid ((char *)f->esp + 4) == false) ||
         (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
@@ -343,7 +344,7 @@ _syscall_mkdir(struct intr_frame *f)
 int
 _syscall_chdir(struct intr_frame *f)
 {
-  const char* name;
+  char *name;
 
   if ((is_uaddr_valid ((char *)f->esp + 4) == false) ||
         (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
@@ -551,12 +552,10 @@ syscall_chdir(char* name)
 {
   bool success = false;
   lock_acquire(&filesys_lock);
-  success = dir_chdir(name);
+  success = dir_chdir (name);
   lock_release(&filesys_lock);
   return success;
 }
-
-
 
 
 static void
