@@ -13,7 +13,6 @@
 struct block *fs_device;
 
 static void do_format (void);
-static char *get_filename (const char *);
 
 /* Initializes the file system module.
    If FORMAT is true, reformats the file system. */
@@ -57,10 +56,11 @@ filesys_create (const char *path, off_t initial_size)
   //struct dir *dir = dir_open_root ();
   char *filename = get_filename (path);
   struct dir *dir = dir_get_leaf (path);
+  block_sector_t parent = inode_get_inumber (dir_get_inode (dir));
 
   bool success = (dir != NULL
                   && free_map_allocate (1, &inode_sector)
-                  && inode_create (inode_sector, initial_size, false,dir->inode->sector)
+                  && inode_create (inode_sector, initial_size, false, parent)
                   && dir_add (dir, filename, inode_sector));
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
@@ -114,14 +114,14 @@ do_format (void)
 {
   printf ("Formatting file system...");
   free_map_create ();
-  if (!dir_create (ROOT_DIR_SECTOR, 16))
+  if (!dir_create (ROOT_DIR_SECTOR, 16, "/"))
     PANIC ("root directory creation failed");
   free_map_close ();
   printf ("done.\n");
 }
 
 /* returns filename from path */
-static char *
+char *
 get_filename (const char *path)
 {
   char s[strlen (path) + 1];
@@ -129,7 +129,7 @@ get_filename (const char *path)
 
   memcpy(s, path, strlen (path) + 1);
 
-  if (path[strlen (path) - 1] == "/")
+  if (path[strlen (path) - 1] == '/')
      return NULL;
 
   for (token = strtok_r (s, " ", &save_ptr); token != NULL;
