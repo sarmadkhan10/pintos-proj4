@@ -101,8 +101,8 @@ filesys_open (const char *path)
 bool
 filesys_remove (const char *name) 
 {
-  // TODO
-  struct dir *dir = dir_open_root ();
+  //struct dir *dir = dir_open_root ();
+  struct dir *dir = thread_current ()->cwd;
   bool success = dir != NULL && dir_remove (dir, name);
   dir_close (dir); 
 

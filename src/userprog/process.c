@@ -79,7 +79,7 @@ int process_add_file (struct file *f)
       return -1;
     }
   // directory handling
-  struct inode *inode = file_get_inode (pf->file);
+  struct inode *inode = file_get_inode (f);
   if (inode != NULL && inode_is_dir (inode))
     {
       pf->dir = dir_open (inode);

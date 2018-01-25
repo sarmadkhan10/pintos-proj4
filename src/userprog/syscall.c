@@ -377,7 +377,7 @@ _syscall_readdir (struct intr_frame *f)
 
   name = *((char **) ((char *)f->esp + 8));
 
-  syscall_readdir (fd, name);
+  f->eax = syscall_readdir (fd, name);
 
   return 0;
 }
@@ -581,7 +581,6 @@ syscall_chdir(char* name)
   return success;
 }
 
-
 bool
 syscall_readdir(int fd, char* name)
 {
@@ -603,7 +602,6 @@ syscall_readdir(int fd, char* name)
 
     ASSERT (f_desc->dir != NULL); // see sys_open() -> add_process_file
     success = dir_readdir (f_desc->dir, name);
-
 
   done:
   lock_release (&filesys_lock);

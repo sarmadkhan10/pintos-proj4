@@ -162,6 +162,11 @@ dir_lookup (const struct dir *dir, const char *name,
     {
       *inode = inode_reopen (dir->inode);
     }
+  /* parent case */
+  else if (strcmp (name, "..") == 0)
+    {
+      dir_get_parent (dir, inode);
+    }
   else
     {
       if (lookup (dir, name, &e, NULL))
@@ -349,7 +354,7 @@ dir_chdir (char *name)
       struct inode *inode;
       if (!dir_lookup (dir, name, &inode))
         {
-          return NULL;
+          return false;
         }
       if (inode_is_dir (inode))
         {
@@ -375,7 +380,8 @@ dir_chdir (char *name)
       return false;
     }
 
-  dir_close (thread_current()->cwd);
+  if (dir != thread_current()->cwd)
+    dir_close (thread_current()->cwd);
   thread_current ()->cwd = dir;
   return true;
 }
