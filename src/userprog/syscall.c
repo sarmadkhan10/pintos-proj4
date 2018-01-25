@@ -96,7 +96,7 @@ syscall_init (void)
   syscall_table[SYS_CLOSE] = _syscall_close;
   syscall_table[SYS_CHDIR] = _syscall_chdir;
   syscall_table[SYS_MKDIR] = _syscall_mkdir;
-  syscall_table[SYS_READDIR] = _syscall_mkdir;
+  syscall_table[SYS_READDIR] = _syscall_readdir;
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -370,12 +370,11 @@ _syscall_readdir (struct intr_frame *f)
 
   fd = *((int *)f->esp + 1);
 
-
-  if ((is_uaddr_valid ((char *)f->esp + 4) == false) ||
-        (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
+  if ((is_uaddr_valid ((char *)f->esp + 8) == false) ||
+        (is_string_valid (*((char **) ((char *)f->esp + 8))) == false))
       syscall_exit (-1);
 
-  name = *((char **) ((char *)f->esp + 4));
+  name = *((char **) ((char *)f->esp + 8));
 
   syscall_readdir (fd, name);
 
@@ -585,6 +584,7 @@ syscall_chdir(char* name)
 bool
 syscall_readdir(int fd,char* name)
 {
+
   bool success = false;
   struct process_file *f_desc;
 
@@ -600,7 +600,7 @@ syscall_readdir(int fd,char* name)
       // check whether it is a valid directory
     if(! inode_is_dir(inode)) goto done;
 
-    ASSERT (f_desc->dir != NULL); // see sys_open()
+    ASSERT (f_desc->dir != NULL); // see sys_open() -> add_process_file
     success = dir_readdir (f_desc->dir, name);
 
 

@@ -72,10 +72,22 @@ struct process_file* process_get_struct (int fd)
 /* adds the file to the file_list of the current thread */
 int process_add_file (struct file *f)
 {
+
+
   struct process_file *pf = malloc(sizeof(struct process_file));
   if (!pf)
     {
       return -1;
+    }
+  // directory handling
+  struct inode *inode = file_get_inode (pf);
+  if (inode != NULL && inode_is_dir (inode))
+    {
+      pf->dir = dir_open (inode);
+    }
+  else
+    {
+      pf->dir = NULL;
     }
   pf->file = f;
   pf->fd = thread_current()->fd;
@@ -821,6 +833,11 @@ void process_close_file (int fd)
       if (fd == pf->fd || fd == -1)
         {
           file_close(pf->file);
+
+         //remove dir from file desc
+          if(pf->dir){
+              dir_close(pf->dir);
+          }
           list_remove(&pf->elem);
           free(pf);
           if (fd != -1)

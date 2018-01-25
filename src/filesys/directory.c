@@ -286,8 +286,7 @@ struct dir* dir_get_leaf (const char* path)
   memcpy(s, path, strlen(path) + 1);
 
   char *save_ptr, *next_token = NULL, *token = strtok_r(s, "/", &save_ptr);
-  if (*token == '.')
-    printf ("token is .\n");
+
   struct dir* dir;
 
   if (s[0] == '/' || !thread_current()->cwd)
@@ -297,9 +296,6 @@ struct dir* dir_get_leaf (const char* path)
 
   if (token)
       next_token = strtok_r(NULL, "/", &save_ptr);
-
-  if (next_token == NULL)
-    printf ("next token is null\n");
 
   while (next_token != NULL)
     {
