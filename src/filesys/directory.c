@@ -146,21 +146,30 @@ lookup (const struct dir *dir, const char *name,
 
 /* Searches DIR for a file with the given NAME
    and returns true if one exists, false otherwise.
-   On success, sets *INODE to an inode for the file, otherwise to
-   a null pointer.  The caller must close *INODE. */
+   On success, sets *INODE to an inode for the file,otherwise to
+   a null pointer.  The caller must close *INODE.
+   sets is_dir */
 bool
 dir_lookup (const struct dir *dir, const char *name,
-            struct inode **inode) 
+            struct inode **inode)
 {
   struct dir_entry e;
 
   ASSERT (dir != NULL);
   ASSERT (name != NULL);
 
-  if (lookup (dir, name, &e, NULL))
-    *inode = inode_open (e.inode_sector);
+  /* if name is . */
+  if (strcmp (name, ".") == 0)
+    {
+      *inode = inode_reopen (dir->inode);
+    }
   else
-    *inode = NULL;
+    {
+      if (lookup (dir, name, &e, NULL))
+        *inode = inode_open (e.inode_sector);
+      else
+        *inode = NULL;
+    }
 
   return *inode != NULL;
 }
@@ -278,15 +287,20 @@ struct dir* dir_get_leaf (const char* path)
   memcpy(s, path, strlen(path) + 1);
 
   char *save_ptr, *next_token = NULL, *token = strtok_r(s, "/", &save_ptr);
+  if (*token == '.')
+    printf ("token is .\n");
   struct dir* dir;
 
   if (s[0] == '/' || !thread_current()->cwd)
       dir = dir_open_root();
-  else
-      dir = dir_reopen(thread_current()->cwd);
+  else{
+      dir = dir_reopen(thread_current()->cwd);printf ("sec is %d\n", inode_get_inumber(dir->inode));}
 
   if (token)
       next_token = strtok_r(NULL, "/", &save_ptr);
+
+  if (next_token == NULL)
+    printf ("next token is null\n");
 
   while (next_token != NULL)
     {
