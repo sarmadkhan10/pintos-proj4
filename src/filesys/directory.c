@@ -340,6 +340,8 @@ dir_chdir (char *name)
 
   if (!thread_current()->cwd)
     dir = dir_open_root();
+  else
+    dir = thread_current ()->cwd;
 
   /* hackish */
   if (strstr (name, "/") == NULL)

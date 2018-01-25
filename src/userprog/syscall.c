@@ -13,6 +13,7 @@
 #include "devices/block.h"
 #include "filesys/directory.h"
 #include "filesys/free-map.h"
+#include "filesys/inode.h"
 
 /* lock for filesystem. */
 struct lock filesys_lock;
@@ -582,7 +583,7 @@ syscall_chdir(char* name)
 
 
 bool
-syscall_readdir(int fd,char* name)
+syscall_readdir(int fd, char* name)
 {
 
   bool success = false;

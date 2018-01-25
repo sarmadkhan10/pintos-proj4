@@ -18,6 +18,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+#include "filesys/inode.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -72,15 +73,13 @@ struct process_file* process_get_struct (int fd)
 /* adds the file to the file_list of the current thread */
 int process_add_file (struct file *f)
 {
-
-
   struct process_file *pf = malloc(sizeof(struct process_file));
   if (!pf)
     {
       return -1;
     }
   // directory handling
-  struct inode *inode = file_get_inode (pf);
+  struct inode *inode = file_get_inode (pf->file);
   if (inode != NULL && inode_is_dir (inode))
     {
       pf->dir = dir_open (inode);
