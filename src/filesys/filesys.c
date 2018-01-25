@@ -9,6 +9,7 @@
 #include "filesys/cache.h"
 #include "threads/malloc.h"
 #include "threads/thread.h"
+#include <string.h>
 
 /* Partition that contains the file system. */
 struct block *fs_device;
@@ -58,11 +59,15 @@ filesys_create (const char *path, off_t initial_size)
   char *filename = get_filename (path);
   struct dir *dir = dir_get_leaf (path);
   block_sector_t parent = inode_get_inumber (dir_get_inode (dir));
+  bool success = false;
 
-  bool success = (dir != NULL
-                  && free_map_allocate (1, &inode_sector)
-                  && inode_create (inode_sector, initial_size, false, parent)
-                  && dir_add (dir, filename, inode_sector));
+  if (strcmp (filename, ".") != 0 && strcmp (filename, "..") != 0)
+    {
+      success = (dir != NULL
+                      && free_map_allocate (1, &inode_sector)
+                      && inode_create (inode_sector, initial_size, false, parent)
+                      && dir_add (dir, filename, inode_sector));
+    }
   if (!success && inode_sector != 0) 
     free_map_release (inode_sector, 1);
   dir_close (dir);
@@ -102,9 +107,10 @@ bool
 filesys_remove (const char *name) 
 {
   //struct dir *dir = dir_open_root ();
-  struct dir *dir = thread_current ()->cwd;
-  bool success = dir != NULL && dir_remove (dir, name);
-  dir_close (dir); 
+  struct dir* dir = dir_get_leaf (name);
+  char* filename = get_filename(name);
+  bool success = dir != NULL && dir_remove (dir, filename);
+  dir_close (dir);
 
   return success;
 }

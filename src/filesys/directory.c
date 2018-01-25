@@ -8,7 +8,7 @@
 #include "threads/thread.h"
 #include "filesys/free-map.h"
 
-static bool dir_get_parent (struct dir *, struct inode **);
+static bool dir_get_parent (const struct dir *, struct inode **);
 
 /* A directory. */
 struct dir 
@@ -132,7 +132,7 @@ lookup (const struct dir *dir, const char *name,
   ASSERT (name != NULL);
 
   for (ofs = 0; inode_read_at (dir->inode, &e, sizeof e, ofs) == sizeof e;
-       ofs += sizeof e) 
+       ofs += sizeof e)
     if (e.in_use && !strcmp (name, e.name)) 
       {
         if (ep != NULL)
@@ -249,7 +249,7 @@ dir_remove (struct dir *dir, const char *name)
 
   /* Erase directory entry. */
   e.in_use = false;
-  if (inode_write_at (dir->inode, &e, sizeof e, ofs) != sizeof e) 
+  if (inode_write_at (dir->inode, &e, sizeof e, ofs) != sizeof e)
     goto done;
 
   /* Remove inode. */
@@ -386,7 +386,7 @@ dir_chdir (char *name)
   return true;
 }
 
-static bool dir_get_parent (struct dir* dir, struct inode **inode)
+static bool dir_get_parent (const struct dir* dir, struct inode **inode)
 {
   block_sector_t sector = inode_get_parent(dir_get_inode(dir));
   *inode = inode_open (sector);
