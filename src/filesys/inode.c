@@ -580,3 +580,8 @@ inode_open_count (struct inode *inode)
 {
   return inode->open_cnt;
 }
+
+block_sector_t inode_get_parent (const struct inode *inode)
+{
+  return inode->data.parent;
+}

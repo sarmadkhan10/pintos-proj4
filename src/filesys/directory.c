@@ -8,6 +8,8 @@
 #include "threads/thread.h"
 #include "filesys/free-map.h"
 
+static bool dir_get_parent (struct dir *, struct inode **);
+
 /* A directory. */
 struct dir 
   {
@@ -57,7 +59,7 @@ dir_create (block_sector_t sector, size_t entry_cnt, char *path)
 /* Opens and returns the directory for the given INODE, of which
    it takes ownership.  Returns a null pointer on failure. */
 struct dir *
-dir_open (struct inode *inode) 
+dir_open (struct inode *inode)
 {
   struct dir *dir = calloc (1, sizeof *dir);
   if (inode != NULL && dir != NULL)
@@ -272,38 +274,51 @@ dir_readdir (struct dir *dir, char name[NAME_MAX + 1])
  */
 struct dir* dir_get_leaf (const char* path)
 {
-  char path_copy[strlen (path) + 1];
-  memcpy(path_copy, path, strlen(path) + 1);
+  char s[strlen(path) + 1];
+  memcpy(s, path, strlen(path) + 1);
 
-  //if (strlen (path) > 0 && path_copy[strlen (path) - 1] == '/')
-      //return NULL;
-
+  char *save_ptr, *next_token = NULL, *token = strtok_r(s, "/", &save_ptr);
   struct dir* dir;
-  if (path_copy[0] == '/' || !thread_current()->cwd)
-      dir = dir_open_root ();
-  else
-      dir = dir_reopen (thread_current ()->cwd);
 
-  char *save_ptr, *next_token, *token = strtok_r (path_copy, "/", &save_ptr);
-  if (token)
-      next_token = strtok_r (NULL, "/", &save_ptr);
+  if (s[0] == '/' || !thread_current()->cwd)
+      dir = dir_open_root();
   else
-      next_token = NULL;
+      dir = dir_reopen(thread_current()->cwd);
+
+  if (token)
+      next_token = strtok_r(NULL, "/", &save_ptr);
+
   while (next_token != NULL)
     {
-      struct inode *inode;
-      if (!dir_lookup (dir, token, &inode))
-          return NULL;
-      if (inode_is_dir(inode))
+      if (strcmp(token, ".") != 0)
         {
-          dir_close (dir);
-          dir = dir_open (inode);
+          struct inode *inode;
+          if (strcmp(token, "..") == 0)
+            {
+              if (!dir_get_parent(dir, &inode))
+                {
+                  return NULL;
+                }
+            }
+          else
+            {
+              if (!dir_lookup(dir, token, &inode))
+                {
+                  return NULL;
+                }
+            }
+          if (inode_is_dir(inode))
+            {
+              dir_close(dir);
+              dir = dir_open(inode);
+            }
+          else
+            {
+              inode_close(inode);
+            }
         }
-      else
-        inode_close (inode);
-
       token = next_token;
-      next_token = strtok_r (NULL, "/", &save_ptr);
+      next_token = strtok_r(NULL, "/", &save_ptr);
     }
   return dir;
 }
@@ -312,13 +327,52 @@ struct dir* dir_get_leaf (const char* path)
 bool
 dir_chdir (char *name)
 {
-  struct dir *dir = dir_get_leaf (name);
+  struct dir* dir;
 
-  if(dir == NULL) {
-    return false;
-  }
+  if (!thread_current()->cwd)
+    dir = dir_open_root();
+
+  /* hackish */
+  if (strstr (name, "/") == NULL)
+    {
+      struct inode *inode;
+      if (!dir_lookup (dir, name, &inode))
+        {
+          return NULL;
+        }
+      if (inode_is_dir (inode))
+        {
+          dir_close (dir);
+          dir = dir_open (inode);
+        }
+      else
+        {
+          inode_close(inode);
+        }
+
+      if (dir != NULL)
+       thread_current()->cwd = dir;
+
+      return dir;
+    }
+
+  /* else */
+  dir = dir_get_leaf (name);
+
+  if(dir == NULL)
+    {
+      return false;
+    }
 
   dir_close (thread_current()->cwd);
-  thread_current()->cwd = dir;
+  thread_current ()->cwd = dir;
   return true;
 }
+
+static bool dir_get_parent (struct dir* dir, struct inode **inode)
+{
+  block_sector_t sector = inode_get_parent(dir_get_inode(dir));
+  *inode = inode_open (sector);
+  return *inode != NULL;
+}
+

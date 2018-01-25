@@ -347,8 +347,8 @@ _syscall_chdir(struct intr_frame *f)
   char *name;
 
   if ((is_uaddr_valid ((char *)f->esp + 4) == false) ||
-        (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
-      syscall_exit (-1);
+      (is_string_valid (*((char **) ((char *)f->esp + 4))) == false))
+    syscall_exit (-1);
 
     name = *((char **) ((char *)f->esp + 4));
 

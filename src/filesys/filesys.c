@@ -8,6 +8,7 @@
 #include "filesys/directory.h"
 #include "filesys/cache.h"
 #include "threads/malloc.h"
+#include "threads/thread.h"
 
 /* Partition that contains the file system. */
 struct block *fs_device;
@@ -81,6 +82,7 @@ filesys_open (const char *path)
 {
   char *filename = get_filename (path);
   struct dir *dir = dir_get_leaf (path);
+
   struct inode *inode = NULL;
 
   if (dir != NULL)
@@ -113,10 +115,8 @@ do_format (void)
 {
   printf ("Formatting file system...");
   free_map_create ();
-  printf ("here1\n");
   if (!dir_create (ROOT_DIR_SECTOR, 16, "/"))
     PANIC ("root directory creation failed");
-  printf ("here2\n");
   free_map_close ();
   printf ("done.\n");
 }
@@ -133,8 +133,8 @@ get_filename (const char *path)
   if (path[strlen (path) - 1] == '/')
      return NULL;
 
-  for (token = strtok_r (s, " ", &save_ptr); token != NULL;
-      token = strtok_r (NULL, " ", &save_ptr))
+  for (token = strtok_r (s, "/", &save_ptr); token != NULL;
+      token = strtok_r (NULL, "/", &save_ptr))
     prev = token;
 
   char *ret_val = (char *) malloc ((sizeof (char)) * (strlen (prev) + 1));
