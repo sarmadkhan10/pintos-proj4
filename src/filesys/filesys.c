@@ -80,9 +80,7 @@ filesys_create (const char *path, off_t initial_size)
 struct file *
 filesys_open (const char *path)
 {
-  printf ("-------> filesysopen path: %s\n", path);
   char *filename = get_filename (path);
-  printf ("-------> filesysopen filename: %s\n", filename);
   struct dir *dir = dir_get_leaf (path);
 
   struct inode *inode = NULL;

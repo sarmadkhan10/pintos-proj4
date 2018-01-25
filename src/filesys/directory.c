@@ -147,8 +147,7 @@ lookup (const struct dir *dir, const char *name,
 /* Searches DIR for a file with the given NAME
    and returns true if one exists, false otherwise.
    On success, sets *INODE to an inode for the file,otherwise to
-   a null pointer.  The caller must close *INODE.
-   sets is_dir */
+   a null pointer.  The caller must close *INODE. */
 bool
 dir_lookup (const struct dir *dir, const char *name,
             struct inode **inode)
@@ -293,8 +292,8 @@ struct dir* dir_get_leaf (const char* path)
 
   if (s[0] == '/' || !thread_current()->cwd)
       dir = dir_open_root();
-  else{
-      dir = dir_reopen(thread_current()->cwd);printf ("sec is %d\n", inode_get_inumber(dir->inode));}
+  else
+      dir = dir_reopen(thread_current()->cwd);
 
   if (token)
       next_token = strtok_r(NULL, "/", &save_ptr);
