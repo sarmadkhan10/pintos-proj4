@@ -106,10 +106,15 @@ filesys_open (const char *path)
 bool
 filesys_remove (const char *name) 
 {
+	//remove root must fail
+	if(strlen(name)==1 && name[0]=='/')
+	{
+		return false;
+	}
   //struct dir *dir = dir_open_root ();
   struct dir* dir = dir_get_leaf (name);
   char* filename = get_filename(name);
-  bool success = dir != NULL && dir_remove (dir, filename);
+  bool success = dir != NULL && dir_remove (dir, filename) ;
   dir_close (dir);
 
   return success;

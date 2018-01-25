@@ -98,6 +98,8 @@ syscall_init (void)
   syscall_table[SYS_CHDIR] = _syscall_chdir;
   syscall_table[SYS_MKDIR] = _syscall_mkdir;
   syscall_table[SYS_READDIR] = _syscall_readdir;
+  syscall_table[SYS_ISDIR] = _syscall_isdir;
+  syscall_table[SYS_INUMBER] = _syscall_inumber;
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -153,6 +155,32 @@ _syscall_wait (struct intr_frame *f)
   int pid = *((int *)f->esp + 1);
 
   f->eax = syscall_wait (pid);
+
+  return 0;
+}
+
+int
+_syscall_isdir (struct intr_frame *f)
+{
+  if (is_uaddr_valid ((int *)f->esp + 1) == false)
+    syscall_exit (-1);
+
+  int fd = *((int *)f->esp + 1);
+
+  f->eax = syscall_isdir (fd);
+
+  return 0;
+}
+
+int
+_syscall_inumber (struct intr_frame *f)
+{
+  if (is_uaddr_valid ((int *)f->esp + 1) == false)
+    syscall_exit (-1);
+
+  int fd = *((int *)f->esp + 1);
+
+  f->eax = syscall_inumber (fd);
 
   return 0;
 }
@@ -607,6 +635,30 @@ syscall_readdir(int fd, char* name)
   lock_release (&filesys_lock);
   return success;
 }
+
+bool
+syscall_isdir(int fd)
+{
+	bool success = false;
+
+	lock_acquire(&filesys_lock);
+	 struct process_file* file_d = process_get_struct(fd);
+	 success = inode_is_dir (file_get_inode(file_d->file));
+	 lock_release(&filesys_lock);
+	return success;
+}
+
+int
+syscall_inumber(int fd)
+{
+	int success=-1;
+	lock_acquire(&filesys_lock);
+	struct process_file* file_d = process_get_struct(fd);
+	success = (int) inode_get_inumber (file_get_inode(file_d->file));
+	lock_release(&filesys_lock);
+	return success;
+}
+
 
 static void
 syscall_handler (struct intr_frame *f)
