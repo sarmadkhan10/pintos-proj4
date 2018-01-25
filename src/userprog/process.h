@@ -33,6 +33,7 @@ struct process_file
     struct file *file;
     int fd;
     struct list_elem elem;
+    struct dir* dir;
   };
 
 void process_init (void);
@@ -43,6 +44,7 @@ void process_activate (void);
 
 /* for filesystem */
 struct file* process_get_file (int fd);
+struct process_file* process_get_struct (int fd);
 int process_add_file(struct file *f);
 void process_close_file (int fd);
 #endif /* userprog/process.h */

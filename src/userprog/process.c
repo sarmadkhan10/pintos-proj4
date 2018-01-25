@@ -51,6 +51,24 @@ struct file* process_get_file (int fd)
   return NULL;
 }
 
+struct process_file* process_get_struct (int fd)
+{
+  struct thread *t = thread_current();
+  struct list_elem *e;
+
+  for (e = list_begin (&t->file_list); e != list_end (&t->file_list);
+       e = list_next (e))
+    {
+      struct process_file *pf = list_entry (e, struct process_file, elem);
+      if (fd == pf->fd)
+        {
+          return pf;
+        }
+    }
+
+  return NULL;
+}
+
 /* adds the file to the file_list of the current thread */
 int process_add_file (struct file *f)
 {
