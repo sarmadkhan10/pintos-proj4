@@ -16,7 +16,6 @@ struct dir
     struct inode *inode;                /* Backing store. */
     off_t pos;                          /* Current position. */
     bool safe_to_del;                   /* prevent deletion if open or cwd of a process */
-    struct dir *parent_dir;             /* parent directory */
   };
 
 /* A single directory entry. */
@@ -376,8 +375,38 @@ dir_chdir (char *name)
       return dir;
     }
 
-  /* else */
-  dir = dir_get_leaf (name);
+  char name2[strlen (name) + 1];
+  memcpy (name2, name + 1, strlen (name));
+  if (name[0] == '/')
+    {
+      thread_current ()->cwd = dir_open_root();
+      if (strstr (name, "/") == NULL)
+        {
+          struct inode *inode;
+          if (!dir_lookup (dir, name, &inode))
+            {
+              return false;
+            }
+          if (inode_is_dir (inode))
+            {
+              dir_close (dir);
+              dir = dir_open (inode);
+            }
+          else
+            {
+              inode_close(inode);
+            }
+
+          if (dir != NULL)
+           thread_current()->cwd = dir;
+
+          return dir;
+        }
+    }
+  else
+    {
+      dir = dir_get_leaf (name);
+    }
 
   if(dir == NULL)
     {
