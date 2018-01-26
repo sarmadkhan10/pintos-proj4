@@ -242,6 +242,10 @@ dir_remove (struct dir *dir, const char *name)
   if (!lookup (dir, name, &e, &ofs))
     goto done;
 
+  if (thread_current ()->cwd != NULL)
+    if (inode_get_inumber (thread_current ()->cwd->inode) == e.inode_sector)
+      return false;
+
   /* Open inode. */
   inode = inode_open (e.inode_sector);
   if (inode == NULL)
@@ -383,8 +387,10 @@ dir_chdir (char *name)
   if (dir != thread_current()->cwd)
     dir_close (thread_current()->cwd);
   thread_current ()->cwd = dir;
+  //printf ("==after chdir cwd: %d\n", inode_get_inumber (dir_get_inode (thread_current ()->cwd)));
   return true;
 }
+
 
 static bool dir_get_parent (const struct dir* dir, struct inode **inode)
 {

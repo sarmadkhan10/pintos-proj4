@@ -90,9 +90,17 @@ filesys_open (const char *path)
 
   struct inode *inode = NULL;
 
-  if (dir != NULL)
-    dir_lookup (dir, filename, &inode);
-  dir_close (dir);
+  if (strlen (path) == 1 && path[0] == '/')
+    {
+      dir = dir_open_root ();
+      inode = dir_get_inode (dir);
+    }
+  else
+    {
+      if (dir != NULL)
+        dir_lookup (dir, filename, &inode);
+      dir_close (dir);
+    }
 
   free (filename);
 
