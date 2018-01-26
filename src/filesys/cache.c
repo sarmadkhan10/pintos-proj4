@@ -9,7 +9,7 @@
 #include "threads/malloc.h"
 #include "devices/timer.h"
 
-#define WRITE_BACK_FREQ   60 /* in terms of seconds */
+#define WRITE_BACK_FREQ   5 /* in terms of seconds */
 
 static struct bitmap *cache_free_map; /* true: sector is free. false: sector is taken */
 static struct list list_buffer_cache;
@@ -133,10 +133,6 @@ buffer_cache_read (block_sector_t sector, void *buffer, int sector_ofs, int size
 
   memcpy (buffer, entry->data + sector_ofs, size);
   entry->accessed = true;
-
-  /* read ahead */
-  //if (entry != NULL)
-    //spawn_thread_read_ahead (sector);
 
   lock_release (&cache_lock);
 }

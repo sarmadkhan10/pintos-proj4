@@ -9,6 +9,7 @@
 >> Fill in the names and email addresses of your group members.
 
 Hamza Anwar <s8haanwa@stud.uni-saarland.de>
+Muhammad Sarmad Khan <s8mukhan@stud.uni-saarland.de>
 
 ---- PRELIMINARIES ----
 
@@ -42,7 +43,11 @@ Hamza Anwar <s8haanwa@stud.uni-saarland.de>
 
 >> A2: What is the maximum size of a file supported by your inode
 >> structure?  Show your work.
-The inode block of a file consists of 123 direct blocks , 1 indirect block and 1 doubly indirect block. Since an indirect block consists of 128 block-pointers a total of 128 and to hold the sector, doubly indirect block 128 may contain ^2 = 16384 sector. So you have one file The maximum size allowed is 123 + 128 + 128^2 = 16635 sectors , which is approximately 8.12 MB
+The inode block of a file consists of 123 direct blocks , 1 indirect block
+and 1 doubly indirect block. Since an indirect block consists of 128 block-pointers
+a total of 128 and to hold the sector, doubly indirect block 128 may contain ^2 = 16384
+sector. So you have one file The maximum size allowed is 123 + 128 + 128^2 = 16635 sectors,
+which is approximately 8.12 MB
 
 ---- SYNCHRONIZATION ----
 
@@ -93,11 +98,27 @@ this approach we had to calculate the allocation blocks separately for each of t
 >> B1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+In directory.c:
+struct dir 
+  {
+    struct inode *inode;                /* Backing store. */
+    off_t pos;                          /* Current position. */
+    bool safe_to_del;                   /* prevent deletion if open or cwd of a process */
+  };
+safe_to_del has been added.
+
 
 ---- ALGORITHMS ----
 
 >> B2: Describe your code for traversing a user-specified path.  How
 >> do traversals of absolute and relative paths differ?
+Whenever a user-specified path has to be traversed, the first character
+of the path is checked. If it is '/', then root directory is opened. Otherwise
+the cwd (current working directory) will be opened.
+For the following path: "/a/b/c"
+Root will be opened first. Then all the directory enteries in root will
+be searched for name "a". If it is found, "b" will be searched in "a" and so on.
+Otherwise the traversal will stop.
 
 ---- SYNCHRONIZATION ----
 
@@ -105,16 +126,26 @@ this approach we had to calculate the allocation blocks separately for each of t
 >> only one of two simultaneous attempts to remove a single file
 >> should succeed, as should only one of two simultaneous attempts to
 >> create a file with the same name, and so on.
+Sine fine-grained synchronization has not been implemented, only one
+process would be able to delete a file. The other attempt will fail
+since the other process won't be able to find that find in the first
+place.
 
 >> B5: Does your implementation allow a directory to be removed if it
 >> is open by a process or if it is in use as a process's current
 >> working directory?  If so, what happens to that process's future
 >> file system operations?  If not, how do you prevent it?
+No. This is done using the dir struct's boolean safe_to_del attribute.
+Whenever a dir is opened or is a cwd of a process, the boolean is set
+to false. And before removing a directory, this boolean is checked.
 
 ---- RATIONALE ----
 
 >> B6: Explain why you chose to represent the current directory of a
 >> process the way you did.
+Current working directory (cwd) attribute has been added to the
+struct thread. It seems to be a reasonable approach since every
+process has its own cwd. This is a pointer to struct dir.
 
 			     BUFFER CACHE
 			     ============
@@ -124,29 +155,88 @@ this approach we had to calculate the allocation blocks separately for each of t
 >> C1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+In cache.h:
+struct buffer_cache_entry
+  {
+    struct list_elem elem;
+    bool ok_to_evict;                 /* ok to evict the cache block or not*/
+    char data[BLOCK_SECTOR_SIZE];     /* data of cache block */
+    block_sector_t sector_no;         /* sector no which this cache entry corresponds to */
+    size_t cache_entry_no;            /* entry no in cache block */
+    bool accessed;                    /* accessed bit */
+    bool dirty;                       /* dirty bit */
+  };
+Metadata about a cache block entry.
+
+In cache.c:
+static struct bitmap *cache_free_map;
+It is used to check whether a cache block is free or not.
+
+static struct list list_buffer_cache;
+Maintains the list of cache block entries (buffer_cache_entry)
+
+static struct lock cache_lock;
+For cache access synchronization.
 
 ---- ALGORITHMS ----
 
 >> C2: Describe how your cache replacement algorithm chooses a cache
 >> block to evict.
+2nd chance clock algorithms has been used. Unlike virtual memory where
+page table was consulted for accessed and dirty bits, we have added accessed
+and dirty attributes to the cache entries, and set them accordingly.
+First of all it is checked whether evicting a page is allowed (i.e. it is
+not beinge read or written to by a process) by checking the cache entry's
+attribute ok_to_evict. If it is ok to evict it, the accesses attribute is
+checked. If it has not been accessed, we can evict it now. If it is dirty,
+it is written back to disk first. If it has been accessed, the accessed attribute
+is set to false and the next entry is checked and so on.
 
 >> C3: Describe your implementation of write-behind.
+Data is not written to disk directly but is written to cache only. Whenever a cache
+entry has to be evicted, it is checked whether it is dirty or not. If it is, only now
+the data is written to disk. Additionally, dirty data is also written to disk
+asynchronously every 5 seconds by means of another threads that writes back the data
+and goes to sleep for 5 seconds. We are using sleep modifications from Project 1 so
+this approach makes sense.
 
 >> C4: Describe your implementation of read-ahead.
+Whenever a request goes to the disk to read a sector, it is checked whether the sector
+next to it is in cache or not. It is not is cache, it is brought into the cache. This is
+done asynchronously by spawing a new thread. This thread terminates when the sector has
+been brought to cache.
 
 ---- SYNCHRONIZATION ----
 
 >> C5: When one process is actively reading or writing data in a
 >> buffer cache block, how are other processes prevented from evicting
 >> that block?
+Before eviction, the cache block's ok_to_evict attributes is checked. Whenever
+a processes is starting to read or write to a cache block, ok_to_evict is
+set to false. If it is set to false, the eviction policy ignores this block
+completely and goes on to the next cache block.
 
 >> C6: During the eviction of a block from the cache, how are other
 >> processes prevented from attempting to access the block?
+Every process that reads from/writes to cache has to acquire the cache_lock.
+So no other process can intervene.
 
 ---- RATIONALE ----
 
 >> C7: Describe a file workload likely to benefit from buffer caching,
 >> and workloads likely to benefit from read-ahead and write-behind.
+Buffer caching:
+Going to the disk direclty for every read or write request is an expensive
+operation due to seek latency etc, and disks are slower than RAM. Having
+a buffer cache prevents that by keeping the read/written blocks in RAM so that another
+read/write request to the same sector won't go to disk but to RAM.
+
+Read-ahead:
+It is probable that if a sector is read from disk, the next sector will also be read
+in near future, so instead of going to the disk again and seek to the next block when this
+request actally comes, we can cache this next block without seeking as it is right next to
+the current sector. If this block doesn't get read at all then we don't lose much. But we gain
+a lot if the request does come.
 
 			   SURVEY QUESTIONS
 			   ================
