@@ -8,9 +8,7 @@
 
 >> Fill in the names and email addresses of your group members.
 
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
+Hamza Anwar <s8haanwa@stud.uni-saarland.de>
 
 ---- PRELIMINARIES ----
 
@@ -30,13 +28,29 @@ FirstName LastName <email@domain.example>
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+	struct inode_disk{
+		block_sector_t direct_blocks[COUNT_DIRECT_BLOCKS]; //sectors for direct blocks
+		block_sector_t indirect_block;		//indirect block
+		block_sector_t doubly_indirect_block; //doubly block indirect
+		off_t length; // File size in bytes.
+	};
+
+	struct inode_indirect_block_sector
+	 {
+	   block_sector_t blocks[PER_SECTOR_INDIRECT_BLOCKS];
+	};
+
 >> A2: What is the maximum size of a file supported by your inode
 >> structure?  Show your work.
+The inode block of a file consists of 123 direct blocks , 1 indirect block and 1 doubly indirect block. Since an indirect block consists of 128 block-pointers a total of 128 and to hold the sector, doubly indirect block 128 may contain ^2 = 16384 sector. So you have one file The maximum size allowed is 123 + 128 + 128^2 = 16635 sectors , which is approximately 8.12 MB
 
 ---- SYNCHRONIZATION ----
 
 >> A3: Explain how your code avoids a race if two processes attempt to
 >> extend a file at the same time.
+At the moment this case is not being handled but by using the filesys_lock 
+in syscalls it will only one process to have the writes to extend the file
+which is holding the lock
 
 >> A4: Suppose processes A and B both have file F open, both
 >> positioned at end-of-file.  If A reads and B writes F at the same
@@ -44,6 +58,8 @@ FirstName LastName <email@domain.example>
 >> may not read data other than what B writes, e.g. if B writes
 >> nonzero data, A is not allowed to see all zeros.  Explain how your
 >> code avoids this race.
+This case is not being handled.
+
 
 >> A5: Explain how your synchronization design provides "fairness".
 >> File access is "fair" if readers cannot indefinitely block writers
@@ -51,6 +67,7 @@ FirstName LastName <email@domain.example>
 >> prevent forever another process from writing the file, and many
 >> processes writing to a file cannot prevent another process forever
 >> from reading the file.
+This case is not being handled.
 
 ---- RATIONALE ----
 
@@ -59,6 +76,14 @@ FirstName LastName <email@domain.example>
 >> indirect blocks?  If not, why did you choose an alternative inode
 >> structure, and what advantages and disadvantages does your
 >> structure have, compared to a multilevel index?
+
+The struct contains 3 kinds of blocks to support multilevel index to create files:
+1.direct-blocks
+2.indirect-blocks
+3. double-indirect-blocks
+We used this approach as it was straight forward to understand but inorder to implement
+this approach we had to calculate the allocation blocks separately for each of the 3 kinds of blocks.
+
 
 			    SUBDIRECTORIES
 			    ==============
